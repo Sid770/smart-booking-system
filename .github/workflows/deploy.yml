@@ -1,0 +1,67 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20.x'
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Build and Deploy Application
+    
+    steps:
+      # Checkout code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Build Backend
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore Backend Dependencies
+        run: dotnet restore backend/AppointmentAPI.csproj
+
+      - name: Build Backend
+        run: dotnet build backend/AppointmentAPI.csproj --configuration Release --no-restore
+
+      - name: Publish Backend
+        run: dotnet publish backend/AppointmentAPI.csproj --configuration Release --output ./backend-publish
+
+      # Deploy Backend to Azure App Service
+      - name: Deploy Backend to Azure
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./backend-publish
+
+      # Build Frontend
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Build Frontend
+        run: npm run build -- --configuration production
+
+      # Deploy Frontend to Azure Static Web Apps
+      - name: Deploy Frontend to Azure
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "dist/hcl2/browser"
+          skip_app_build: true
