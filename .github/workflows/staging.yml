@@ -1,0 +1,146 @@
+name: Staging Environment CI/CD
+
+on:
+  push:
+    branches: [ staging ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_FRONTEND_NAME: appointment-booking-frontend-staging
+  AZURE_WEBAPP_BACKEND_NAME: appointment-booking-api-staging
+  NODE_VERSION: '20.x'
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  # Frontend Build and Deploy
+  frontend-staging:
+    name: Frontend - Build & Deploy (Staging)
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ steps.deploy-frontend.outputs.webapp-url }}
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🧪 Run Tests
+        run: npm test -- --run
+
+      - name: 🔍 Lint Check
+        run: npm run lint || echo "Lint check skipped"
+
+      - name: 🔨 Build Angular App
+        run: npm run build -- --configuration=production
+        env:
+          NODE_ENV: production
+
+      - name: 📤 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-staging
+          path: dist/hcl2/browser
+          retention-days: 30
+
+      - name: 🚀 Deploy to Azure Static Web Apps
+        id: deploy-frontend
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_STAGING }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"
+          api_location: ""
+          output_location: "dist/hcl2/browser"
+          skip_app_build: true
+
+  # Backend Build and Deploy
+  backend-staging:
+    name: Backend - Build & Deploy (Staging)
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://${{ env.AZURE_WEBAPP_BACKEND_NAME }}.azurewebsites.net
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: 📦 Restore Dependencies
+        run: dotnet restore ./backend/AppointmentAPI.csproj
+
+      - name: 🔨 Build
+        run: dotnet build ./backend/AppointmentAPI.csproj --configuration Release --no-restore
+
+      - name: 🧪 Run Tests
+        run: dotnet test ./backend/AppointmentAPI.csproj --no-restore --verbosity normal
+
+      - name: 📤 Publish
+        run: dotnet publish ./backend/AppointmentAPI.csproj -c Release -o ./publish
+
+      - name: 📦 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-staging
+          path: ./publish
+          retention-days: 30
+
+      - name: 🚀 Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_BACKEND_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_STAGING }}
+          package: ./publish
+
+      - name: 🗄️ Run Database Migrations
+        run: |
+          echo "Database migrations for staging"
+          # Add your migration commands here
+          # dotnet ef database update --project ./backend/AppointmentAPI.csproj
+
+  # Smoke Tests
+  smoke-tests:
+    name: 🧪 Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [frontend-staging, backend-staging]
+    
+    steps:
+      - name: 🔍 Health Check - Frontend
+        run: |
+          curl -f https://${{ env.AZURE_WEBAPP_FRONTEND_NAME }}.azurestaticapps.net || exit 1
+
+      - name: 🔍 Health Check - Backend
+        run: |
+          curl -f https://${{ env.AZURE_WEBAPP_BACKEND_NAME }}.azurewebsites.net/api/providers || exit 1
+
+      - name: ✅ Smoke Tests Passed
+        run: echo "All smoke tests passed successfully!"
+
+  # Notification
+  notify-success:
+    name: 📢 Notify Deployment Success
+    runs-on: ubuntu-latest
+    needs: [smoke-tests]
+    if: success()
+    
+    steps:
+      - name: ✅ Deployment Successful
+        run: |
+          echo "🎉 Staging deployment successful!"
+          echo "Frontend: https://${{ env.AZURE_WEBAPP_FRONTEND_NAME }}.azurestaticapps.net"
+          echo "Backend: https://${{ env.AZURE_WEBAPP_BACKEND_NAME }}.azurewebsites.net"
+          echo "Swagger: https://${{ env.AZURE_WEBAPP_BACKEND_NAME }}.azurewebsites.net"

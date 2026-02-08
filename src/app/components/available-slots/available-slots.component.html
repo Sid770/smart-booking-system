@@ -1,0 +1,114 @@
+<div class="container">
+  <div class="header">
+    <h1>Available Appointment Slots</h1>
+    <p class="subtitle">Select a date and time that works best for you</p>
+  </div>
+
+  <div class="filters-section">
+    <div class="filter-group">
+      <label for="date-picker" class="filter-label">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Select Date
+      </label>
+      <input 
+        type="date" 
+        id="date-picker"
+        class="date-input"
+        [value]="selectedDate()"
+        (change)="onDateChange($event)"
+        [min]="selectedDate()"
+      />
+    </div>
+
+    <div class="filter-group">
+      <label for="provider-select" class="filter-label">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        Provider (Optional)
+      </label>
+      <select 
+        id="provider-select"
+        class="provider-select"
+        (change)="onProviderChange($event)"
+      >
+        <option value="">All Providers</option>
+        @for (provider of providers; track provider.id) {
+          <option [value]="provider.id">{{ provider.name }} - {{ provider.specialty }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading available slots...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-banner" role="alert">
+      <svg class="error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+    @if (slots().length === 0) {
+      <div class="empty-state">
+        <svg class="empty-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <h2>No Slots Available</h2>
+        <p>There are no available appointments for the selected date. Please try another date.</p>
+      </div>
+    } @else {
+      <div class="date-header">
+        <h2>{{ formatDate(selectedDate()) }}</h2>
+        <span class="slot-count">{{ slots().length }} slots available</span>
+      </div>
+
+      @for (entry of groupedSlots() | keyvalue; track entry.key) {
+        <div class="provider-section">
+          <h3 class="provider-name">{{ entry.key }}</h3>
+          <div class="slots-grid">
+            @for (slot of entry.value; track slot.id) {
+              <button 
+                class="slot-card"
+                (click)="bookSlot(slot)"
+                [class.unavailable]="!slot.isAvailable"
+                [disabled]="!slot.isAvailable"
+              >
+                <div class="slot-time">
+                  <svg class="time-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span>{{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}</span>
+                </div>
+                @if (slot.isAvailable) {
+                  <span class="availability-badge available">Available</span>
+                } @else {
+                  <span class="availability-badge booked">Booked</span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      }
+    }
+  }
+</div>

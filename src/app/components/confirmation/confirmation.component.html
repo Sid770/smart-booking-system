@@ -1,0 +1,175 @@
+<div class="container">
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading appointment details...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-container">
+      <svg class="error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <h2>Error</h2>
+      <p>{{ error() }}</p>
+      <button class="primary-button" (click)="goToSlots()">Back to Slots</button>
+    </div>
+  }
+
+  @if (!loading() && !error() && appointment()) {
+    <div class="confirmation-card">
+      <div class="success-header">
+        <div class="checkmark-circle">
+          <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h1>Booking Confirmed!</h1>
+        <p class="confirmation-message">Your appointment has been successfully booked</p>
+      </div>
+
+      <div class="appointment-details">
+        <h2>Appointment Details</h2>
+        
+        <div class="details-grid">
+          <div class="detail-item">
+            <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <div class="detail-content">
+              <span class="detail-label">Date</span>
+              <span class="detail-value">{{ appointment()!.slot ? formatDate(appointment()!.slot!.date) : 'N/A' }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <div class="detail-content">
+              <span class="detail-label">Time</span>
+              <span class="detail-value">
+                {{ appointment()!.slot ? formatTime(appointment()!.slot!.startTime) + ' - ' + formatTime(appointment()!.slot!.endTime) : 'N/A' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <div class="detail-content">
+              <span class="detail-label">Provider</span>
+              <span class="detail-value">{{ appointment()!.slot?.providerName || 'N/A' }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <div class="detail-content">
+              <span class="detail-label">Patient Name</span>
+              <span class="detail-value">{{ appointment()!.customerName }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <div class="detail-content">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">{{ appointment()!.customerEmail }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            <div class="detail-content">
+              <span class="detail-label">Phone</span>
+              <span class="detail-value">{{ appointment()!.customerPhone }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <div class="detail-content">
+              <span class="detail-label">Service Type</span>
+              <span class="detail-value">{{ appointment()!.serviceType }}</span>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <svg class="detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+            <div class="detail-content">
+              <span class="detail-label">Booking ID</span>
+              <span class="detail-value">#{{ appointment()!.id }}</span>
+            </div>
+          </div>
+        </div>
+
+        @if (appointment()!.notes) {
+          <div class="notes-section">
+            <h3>Additional Notes</h3>
+            <p>{{ appointment()!.notes }}</p>
+          </div>
+        }
+      </div>
+
+      <div class="info-banner">
+        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>
+          <strong>Important:</strong>
+          <p>A confirmation email has been sent to {{ appointment()!.customerEmail }}. Please arrive 10 minutes before your appointment time.</p>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="secondary-button" (click)="printConfirmation()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Print Confirmation
+        </button>
+        <button class="primary-button" (click)="goToSlots()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+          Book Another Appointment
+        </button>
+      </div>
+    </div>
+  }
+</div>
