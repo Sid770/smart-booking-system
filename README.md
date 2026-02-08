@@ -281,40 +281,61 @@ For complete API documentation, visit the Swagger UI at http://localhost:5050 or
 
 ## ☁️ Deployment
 
-### Azure Deployment (Recommended)
+This project is fully configured for Azure deployment with automated CI/CD pipelines.
 
-#### 1. Frontend (Azure Static Web Apps)
-```bash
-# Build production
-npm run build
+### Quick Deploy to Azure
 
-# Deploy via Azure Portal or GitHub Actions
+**📖 Complete Deployment Guide**: See [docs/AZURE_DEPLOYMENT_COMPLETE.md](docs/AZURE_DEPLOYMENT_COMPLETE.md)
+
+**🚀 Workflow Reference**: See [docs/DEPLOYMENT_WORKFLOW.md](docs/DEPLOYMENT_WORKFLOW.md)
+
+### Architecture Overview
+
+```
+GitHub (3 branches) → GitHub Actions CI/CD → Azure Resources
+  ├─ develop  → Development  (Auto-deploy)
+  ├─ staging  → Staging      (Auto-deploy)
+  └─ main     → Production   (Auto-deploy)
+
+Each environment includes:
+  ├─ Azure Static Web App    (Angular frontend)
+  ├─ Azure App Service       (.NET backend)
+  └─ Azure SQL Database      (Data storage)
 ```
 
-#### 2. Backend (Azure App Service)
-```bash
-# Build and publish
-cd backend
-dotnet publish -c Release -o ./publish
+### Deployment Steps Summary
 
-# Deploy to Azure App Service
-```
+1. **Create Azure Resources** (one-time setup)
+   - 3 Resource Groups (dev, staging, prod)
+   - 3 App Services for backend APIs
+   - 3 Static Web Apps for frontends
+   - 3 Azure SQL Databases
 
-#### 3. Database (Azure SQL Database)
-- Create Azure SQL Database
-- Update connection string in `appsettings.json`
-- Run migrations: `dotnet ef database update`
+2. **Configure GitHub Secrets** (one-time setup)
+   - Static Web App deployment tokens
+   - App Service publish profiles
+
+3. **Deploy with Git Push**
+   ```bash
+   git push origin develop   # Deploys to development
+   git push origin staging   # Deploys to staging
+   git push origin main      # Deploys to production
+   ```
 
 ### Environment Variables
 
-**Backend (Azure App Service Configuration)**
+Backend configuration is automatically injected via Azure App Service Configuration:
 ```
-ConnectionStrings__DefaultConnection=Server=tcp:...
-ASPNETCORE_ENVIRONMENT=Production
-AllowedOrigins=https://your-frontend-url.azurewebsites.net
+ConnectionStrings__DefaultConnection    # SQL Server connection
+ASPNETCORE_ENVIRONMENT                  # Environment name
+AllowedOrigins                          # CORS configuration
 ```
 
-For detailed deployment instructions, see [GETTING_STARTED.md](GETTING_STARTED.md).
+Frontend configuration via environment files:
+- `src/environments/environment.ts` - Local
+- `src/environments/environment.development.ts` - Development
+- `src/environments/environment.staging.ts` - Staging
+- `src/environments/environment.prod.ts` - Production
 
 ---
 
@@ -322,22 +343,33 @@ For detailed deployment instructions, see [GETTING_STARTED.md](GETTING_STARTED.m
 
 ### GitHub Actions Workflows
 
-This project includes automated CI/CD pipelines for:
-- **Development** - Auto-deploy on push to `develop` branch
-- **Staging** - Auto-deploy on push to `staging` branch
-- **Production** - Manual approval required for `main` branch
+**✅ Status**: Fully configured and ready to use!
+
+This project includes automated CI/CD pipelines:
+
+| Branch | Environment | Trigger | Actions |
+|--------|-------------|---------|---------|
+| `develop` | Development | Auto-deploy on push | Build → Test → Deploy to Azure Dev |
+| `staging` | Staging | Auto-deploy on push | Build → Test → Deploy to Azure Staging |
+| `main` | Production | Auto-deploy on push | Build → Test → Deploy to Azure Prod |
 
 ### Pipeline Features
-- Automated builds and tests
-- Environment-specific deployments
-- Azure App Service integration
-- Rollback capabilities
-- Automated database migrations
+✨ **Frontend Pipeline** ([azure-deploy-frontend.yml](.github/workflows/azure-deploy-frontend.yml))
+- Node.js 20 with npm caching
+- Environment-specific Angular builds
+- Deploy to Azure Static Web Apps
+- Automatic PR preview deployments
 
-### Workflow Files
-- `.github/workflows/development.yml` - Dev environment
-- `.github/workflows/staging.yml` - Staging environment
-- `.github/workflows/production.yml` - Production environment
+🔧 **Backend Pipeline** ([azure-deploy-backend.yml](.github/workflows/azure-deploy-backend.yml))
+- .NET 10.0 build and test
+- Environment-specific deployments
+- Deploy to Azure App Service
+- Database migration support
+
+### Workflow States
+- 🟢 **All Green**: Ready to deploy
+- 🟡 **In Progress**: Deployment running
+- 🔴 **Failed**: Check logs in [GitHub Actions](https://github.com/Sid770/smart-booking-system/actions)
 
 ---
 
